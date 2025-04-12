@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>How a Bill Becomes Law: Jeopardy</title>
+    <style>
+        body {
+            font-family: 'Trebuchet MS', sans-serif;
+            background-color: #f0f8ff;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+        header {
+            background-color: #060ce9;
+            color: white;
+            width: 100%;
+            text-align: center;
+            padding: 15px 0;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        h1 {
+            margin: 0;
+            font-size: 32px;
+            letter-spacing: 1px;
+        }
+        .game-container {
+            display: flex;
+            flex-direction: column;
+            width: 90%;
+            max-width: 1200px;
+            margin: 20px auto;
+        }
+        .scoreboard {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 20px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .team-score {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .score-controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 5px;
+        }
+        .team-score h3 {
+            margin: 0;
+            color: #333;
+        }
+        .score-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #060ce9;
+        }
+        .board {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 10px;
+            width: 100%;
+        }
+        .category-header, .question-cell {
+            background-color: #060ce9;
+            color: white;
+            text-align: center;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: transform 0.2s;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        .category-header {
+            font-weight: bold;
+            padding: 15px 10px;
+            font-size: 16px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .question-cell {
+            font-size: 24px;
+            font-weight: bold;
+            height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .question-cell:hover {
+            transform: scale(1.03);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+        .question-cell.answered {
+            background-color: #1e3a8a;
+            color: #aaa;
+            cursor: not-allowed;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.8);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background-color: #060ce9;
+            color: white;
+            padding: 30px;
+            border-radius: 10px;
+            text-align: center;
+            max-width: 80%;
+            max-height: 80%;
+            overflow-y: auto;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+        .question-text {
+            font-size: 24px;
+            margin-bottom: 30px;
+        }
+        .answer-text {
+            font-size: 22px;
+            display: none;
+            background-color: #f8f9fa;
+            color: #060ce9;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            font-weight: bold;
+        }
+        button {
+            background-color: #f8f9fa;
+            color: #060ce9;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #e2e8f0;
+        }
+        .button-group {
+            margin-top: 20px;
+        }
+        .reset-button {
+            margin-top: 20px;
+            background-color: #dc2626;
+            color: white;
+        }
+        .reset-button:hover {
+            background-color: #b91c1c;
+        }
+        .instructions {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: left;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .instructions h2 {
+            color: #060ce9;
+            margin-top: 0;
+        }
+        .instructions li {
+            margin: 8px 0;
+        }
+        @media (max-width: 768px) {
+            .board {
+                grid-template-columns: repeat(3, 1fr);
+            }
+            .category-header, .question-cell {
+                font-size: 14px;
+                padding: 8px 5px;
+                height: auto;
+            }
+            .question-cell {
+                font-size: 16px;
+            }
+            .modal-content {
+                max-width: 95%;
+            }
+            .question-text {
+                font-size: 18px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>HOW A BILL BECOMES LAW: JEOPARDY</h1>
+    </header>
+
+    <div class="game-container">
+        <div class="scoreboard">
+            <div class="team-score">
+                <h3>Team 1</h3>
+                <div class="score-value" id="team1-score">0</div>
+                <div class="score-controls">
+                    <button onclick="updateScore(1, 'add')">+</button>
+                    <button onclick="updateScore(1, 'subtract')">-</button>
+                </div>
+            </div>
+            <div class="team-score">
+                <h3>Team 2</h3>
+                <div class="score-value" id="team2-score">0</div>
+                <div class="score-controls">
+                    <button onclick="updateScore(2, 'add')">+</button>
+                    <button onclick="updateScore(2, 'subtract')">-</button>
+                </div>
+            </div>
+            <div class="team-score">
+                <h3>Team 3</h3>
+                <div class="score-value" id="team3-score">0</div>
+                <div class="score-controls">
+                    <button onclick="updateScore(3, 'add')">+</button>
+                    <button onclick="updateScore(3, 'subtract')">-</button>
+                </div>
+            </div>
+            <button class="reset-button" onclick="resetGame()">Reset Game</button>
+        </div>
+
+        <div class="instructions">
+            <h2>How to Play</h2>
+            <ol>
+                <li>Divide the class into teams (up to 3).</li>
+                <li>Teams take turns selecting a question by clicking on a dollar value.</li>
+                <li>After reading the question, teams have time to discuss and answer.</li>
+                <li>Click "Show Answer" to reveal the correct response.</li>
+                <li>Award points to the team that answered correctly using the + button.</li>
+                <li>Subtract points for incorrect answers using the - button.</li>
+                <li>The team with the highest score at the end wins!</li>
+            </ol>
+        </div>
+
+        <div class="board" id="board">
+            <!-- Categories and questions will be dynamically inserted here -->
+        </div>
+    </div>
+
+    <div class="modal" id="question-modal">
+        <div class="modal-content">
+            <p class="question-text" id="modal-question"></p>
+            <div class="answer-text" id="modal-answer"></div>
+            <div class="button-group">
+                <button onclick="showAnswer()">Show Answer</button>
+                <button onclick="closeModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Game data
+        const gameData = {
+            categories: [
+                "Bill Basics",
+                "The House",
+                "The Senate",
+                "Committees",
+                "Presidential Actions",
+                "Special Procedures"
+            ],
+            questions: {
+                "Bill Basics": [
+                    {
+                        value: 100,
+                        question: "This document grants Congress the power to make laws",
+                        answer: "The Constitution"
+                    },
+                    {
+                        value: 200,
+                        question: "The official term for a proposed law before it is enacted",
+                        answer: "A bill"
+                    },
+                    {
+                        value: 300,
+                        question: "The phrase that begins every bill in the House of Representatives",
+                        answer: "'Be it enacted by the Senate and House of Representatives'"
+                    },
+                    {
+                        value: 400,
+                        question: "The Article of the Constitution that outlines legislative powers",
+                        answer: "Article I"
+                    },
+                    {
+                        value: 500,
+                        question: "The process that must occur in both chambers for a bill to advance to the President",
+                        answer: "Passage in identical form"
+                    }
+                ],
+                "The House": [
+                    {
+                        value: 100,
+                        question: "The total number of voting members in the House of Representatives",
+                        answer: "435"
+                    },
+                    {
+                        value: 200,
+                        question: "Bills concerning this must originate in the House of Representatives",
+                        answer: "Revenue/tax bills"
+                    },
+                    {
+                        value: 300,
+                        question: "The committee that determines which bills reach the House floor for a vote",
+                        answer: "The Rules Committee"
+                    },
+                    {
+                        value: 400,
+                        question: "This House procedure requires signatures from a majority of members to force a bill out of committee",
+                        answer: "A discharge petition"
+                    },
+                    {
+                        value: 500,
+                        question: "The number of representatives needed to pass a bill under regular order in the House",
+                        answer: "A simple majority (at least 218 of 435)"
+                    }
+                ],
+                "The Senate": [
+                    {
+                        value: 100,
+                        question: "The number of senators from each state",
+                        answer: "2"
+                    },
+                    {
+                        value: 200,
+                        question: "This Senate tactic involves extended debate to delay or prevent a vote",
+                        answer: "A filibuster"
+                    },
+                    {
+                        value: 300,
+                        question: "The Senate procedure that can be used to end a filibuster",
+                        answer: "Cloture"
+                    },
+                    {
+                        value: 400,
+                        question: "The minimum number of senators needed to invoke cloture",
+                        answer: "60 senators"
+                    },
+                    {
+                        value: 500,
+                        question: "Type of legislation that only requires a simple majority in the Senate rather than being subject to filibuster",
+                        answer: "Reconciliation"
+                    }
+                ],
+                "Committees": [
+                    {
+                        value: 100,
+                        question: "The first type of committee that typically reviews a new bill",
+                        answer: "A standing committee"
+                    },
+                    {
+                        value: 200,
+                        question: "The type of committee that reconciles differences between House and Senate versions of a bill",
+                        answer: "A conference committee"
+                    },
+                    {
+                        value: 300,
+                        question: "The process where committees examine a bill in detail and make revisions",
+                        answer: "Markup"
+                    },
+                    {
+                        value: 400,
+                        question: "This committee action effectively kills a bill",
+                        answer: "Tabling a bill (or not reporting it out)"
+                    },
+                    {
+                        value: 500,
+                        question: "This type of hearing allows the public and interest groups to provide input on a bill",
+                        answer: "Public hearings"
+                    }
+                ],
+                "Presidential Actions": [
+                    {
+                        value: 100,
+                        question: "The president's formal approval of a bill, making it law",
+                        answer: "Signing the bill"
+                    },
+                    {
+                        value: 200,
+                        question: "When the President refuses to sign a bill and returns it to Congress with objections",
+                        answer: "A veto"
+                    },
+                    {
+                        value: 300,
+                        question: "The fraction of both houses needed to override a presidential veto",
+                        answer: "Two-thirds"
+                    },
+                    {
+                        value: 400,
+                        question: "When a bill becomes law without the President's signature after 10 days (excluding Sundays)",
+                        answer: "Automatic enactment"
+                    },
+                    {
+                        value: 500,
+                        question: "This occurs when Congress adjourns within the 10-day period and the President doesn't sign the bill",
+                        answer: "A pocket veto"
+                    }
+                ],
+                "Special Procedures": [
+                    {
+                        value: 100,
+                        question: "A type of bill that contains multiple provisions across diverse subjects",
+                        answer: "An omnibus bill"
+                    },
+                    {
+                        value: 200,
+                        question: "Bills that must be passed to keep the government funded",
+                        answer: "Appropriations bills"
+                    },
+                    {
+                        value: 300,
+                        question: "A special rule in the Senate that allows certain budget-related bills to pass with a simple majority",
+                        answer: "Budget reconciliation"
+                    },
+                    {
+                        value: 400,
+                        question: "This procedure allows rapid introduction and consideration of legislation in emergency situations",
+                        answer: "Suspension of the rules"
+                    },
+                    {
+                        value: 500,
+                        question: "A joint resolution proposing this must pass both chambers by a two-thirds majority",
+                        answer: "A constitutional amendment"
+                    }
+                ]
+            }
+        };
+
+        // Game state
+        let currentQuestion = null;
+        const scores = {
+            1: 0,
+            2: 0,
+            3: 0
+        };
+        const answeredQuestions = [];
+
+        // Initialize the game board
+        function initializeBoard() {
+            const board = document.getElementById('board');
+            board.innerHTML = '';
+
+            // Add category headers
+            gameData.categories.forEach(category => {
+                const categoryHeader = document.createElement('div');
+                categoryHeader.className = 'category-header';
+                categoryHeader.textContent = category.toUpperCase();
+                board.appendChild(categoryHeader);
+            });
+
+            // Add question cells by value
+            for (let value = 100; value <= 500; value += 100) {
+                gameData.categories.forEach(category => {
+                    const questionCell = document.createElement('div');
+                    questionCell.className = 'question-cell';
+                    questionCell.textContent = '$' + value;
+                    questionCell.dataset.category = category;
+                    questionCell.dataset.value = value;
+                    
+                    const questionKey = `${category}-${value}`;
+                    if (answeredQuestions.includes(questionKey)) {
+                        questionCell.classList.add('answered');
+                    } else {
+                        questionCell.addEventListener('click', () => openQuestion(category, value));
+                    }
+                    
+                    board.appendChild(questionCell);
+                });
+            }
+        }
+
+        // Open a question
+        function openQuestion(category, value) {
+            const questionData = gameData.questions[category].find(q => q.value === parseInt(value));
+            if (questionData) {
+                const modal = document.getElementById('question-modal');
+                const questionText = document.getElementById('modal-question');
+                const answerText = document.getElementById('modal-answer');
+                
+                // Display the question
+                currentQuestion = {
+                    category,
+                    value: parseInt(value),
+                    key: `${category}-${value}`
+                };
+                
+                questionText.textContent = questionData.question;
+                answerText.textContent = questionData.answer;
+                answerText.style.display = 'none';
+                
+                modal.style.display = 'flex';
+            }
+        }
+
+        // Show the answer
+        function showAnswer() {
+            const answerText = document.getElementById('modal-answer');
+            answerText.style.display = 'block';
+        }
+
+        // Close the modal
+        function closeModal() {
+            const modal = document.getElementById('question-modal');
+            modal.style.display = 'none';
+            
+            if (currentQuestion) {
+                // Mark the question as answered
+                answeredQuestions.push(currentQuestion.key);
+                
+                // Update the board
+                const questionCell = document.querySelector(`.question-cell[data-category="${currentQuestion.category}"][data-value="${currentQuestion.value}"]`);
+                if (questionCell) {
+                    questionCell.classList.add('answered');
+                    questionCell.removeEventListener('click', openQuestion);
+                }
+                
+                currentQuestion = null;
+            }
+            
+            // Update the board
+            initializeBoard();
+        }
+
+        // Update team score
+        function updateScore(team, action) {
+            if (currentQuestion) {
+                const value = currentQuestion.value;
+                if (action === 'add') {
+                    scores[team] += value;
+                } else if (action === 'subtract') {
+                    scores[team] -= value;
+                }
+                
+                // Update score display
+                document.getElementById(`team${team}-score`).textContent = scores[team];
+            }
+        }
+
+        // Reset the game
+        function resetGame() {
+            // Reset scores
+            for (let team = 1; team <= 3; team++) {
+                scores[team] = 0;
+                document.getElementById(`team${team}-score`).textContent = '0';
+            }
+            
+            // Clear answered questions
+            answeredQuestions.length = 0;
+            
+            // Reinitialize the board
+            initializeBoard();
+            
+            // Close modal if open
+            document.getElementById('question-modal').style.display = 'none';
+            currentQuestion = null;
+        }
+
+        // Initialize the game when the page loads
+        window.onload = initializeBoard;
+    </script>
+</body>
+</html>
